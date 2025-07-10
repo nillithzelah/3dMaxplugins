@@ -1,0 +1,584 @@
+body {
+    background: #232323;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow-y: scroll;
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: #333 #232323; /* Firefox */
+}
+
+/* Chrome/Safari */
+body::-webkit-scrollbar {
+    width: 8px;
+}
+body::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+}
+body::-webkit-scrollbar-track {
+    background: #232323;
+}
+
+.ps-panel {
+    background: #232323;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    width: 100%;
+    min-height: 350px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.ps-tabs {
+    display: flex;
+    background: #181818;
+    border-bottom: 1px solid #333;
+}
+.ps-tab {
+    flex: 1;
+    text-align: center;
+    padding: 12px 0;
+    cursor: pointer;
+    color: #bbb;
+    font-weight: 500;
+    font-size: 15px;
+    transition: background 0.2s, color 0.2s;
+    border-right: 1px solid #333;
+    user-select: none;
+}
+.ps-tab:last-child {
+    border-right: none;
+}
+.ps-tab.active {
+    background: #2d2d2d;
+    color: #fff;
+    font-weight: bold;
+    border-bottom: 2px solid #4a90e2;
+}
+.ps-content {
+    flex: 1;
+    padding: 20px 24px 16px 24px;
+    background: #232323;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+.ps-section {
+    margin-bottom: 16px;
+}
+.ps-label {
+    color: #aaa;
+    font-size: 14px;
+    margin-right: 10px;
+}
+.ps-select {
+    background: #181818;
+    color: #fff;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 14px;
+    outline: none;
+    transition: border 0.2s;
+    width: 220px;
+    min-width: 220px;
+    max-width: 220px;
+}
+.ps-select:focus {
+    border: 1.5px solid #4a90e2;
+}
+.ps-footer, #ps-footer-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 300px;
+    padding-top: 5px;
+    gap: 0;
+}
+.footer-title {
+    font-size: 22px;
+    margin-bottom: 12px;
+}
+.upload-section {
+    max-width: 340px;
+    min-width: 260px;
+    margin-bottom: 10px;
+    padding: 8px 0 0 0;
+}
+.upload-header {
+    font-size: 16px;
+    margin-bottom: 8px;
+}
+.upload-label {
+    color: #aaa;
+    font-size: 13px;
+    font-weight: 500;
+}
+.upload-switch {
+    display: flex;
+    gap: 6px;
+}
+.switch-btn {
+    background: #181818;
+    color: #bbb;
+    border: 1px solid #444;
+    border-radius: 4px 4px 0 0;
+    padding: 4px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+    transition: background 0.2s, color 0.2s;
+}
+.switch-btn.active {
+    background: #2d2d2d;
+    color: #fff;
+    border-bottom: 2px solid #4a90e2;
+}
+.upload-box {
+    background: #181818;
+    border: 1.5px dashed #444;
+    border-radius: 6px;
+    min-height: 120px;
+    font-size: 16px;
+    max-width: 340px;
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: visible;
+}
+.upload-placeholder {
+    font-size: 15px;
+    color: #888;
+    text-align: center;
+    width: 100%;
+    padding: 18px 0;
+    user-select: none;
+    position: static;
+    display: block;
+    pointer-events: auto;
+    z-index: auto;
+    height: auto;
+}
+.upload-box img {
+    max-width: 100%;
+    max-height: 80px;
+    display: block;
+    margin: auto;
+    border-radius: 4px;
+    position: static;
+    z-index: auto;
+}
+.ps-form-block {
+    max-width: 340px;
+    min-width: 260px;
+    margin-top: 18px;
+    margin-bottom: 0;
+}
+.ps-form-label {
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+.ps-form-input {
+    background: #232323;
+    color: #fff;
+    border: 1.5px solid #444;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 16px;
+    outline: none;
+    margin-bottom: 0;
+    margin-top: 2px;
+    width: 100%;
+    box-sizing: border-box;
+    transition: border 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08) inset;
+    font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+    letter-spacing: 1px;
+}
+.ps-form-input:focus {
+    border: 1.5px solid #4a90e2;
+    box-shadow: 0 0 0 2px rgba(76,144,226,0.15);
+    background: #232b33;
+}
+
+.ps-form-select {
+    background: #181818;
+    color: #fff;
+    border: 1.5px solid #444;
+    border-radius: 4px;
+    padding: 8px 36px 8px 12px;
+    font-size: 15px;
+    outline: none;
+    margin-bottom: 0;
+    margin-top: 2px;
+    width: 100%;
+    min-height: 38px;
+    box-sizing: border-box;
+    transition: border 0.2s, box-shadow 0.2s;
+    font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+    cursor: pointer;
+}
+.ps-form-select:focus {
+    border: 1.5px solid #4a90e2;
+    background: #232b33;
+}
+.ps-form-select option {
+    background: #232323;
+    color: #fff;
+    padding: 8px 12px;
+}
+.ps-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.ps-slider-label:last-child {
+    margin-right: 16px;
+}
+.ps-slider-value {
+    margin-left: 16px;
+}
+.ps-slider {
+    flex: 1;
+    height: 8px;
+    background: linear-gradient(90deg, #444 0%, #232323 100%);
+    border-radius: 6px;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    margin: 0 8px;
+    transition: background 0.2s;
+}
+.ps-slider:focus {
+    background: linear-gradient(90deg, #4a90e2 0%, #232323 100%);
+}
+.ps-slider::-webkit-slider-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #232323;
+    border: 2.5px solid #4a90e2;
+    box-shadow: 0 2px 8px rgba(76,144,226,0.18);
+    cursor: pointer;
+    transition: border 0.2s, box-shadow 0.2s;
+}
+.ps-slider:focus::-webkit-slider-thumb,
+.ps-slider:hover::-webkit-slider-thumb {
+    border: 2.5px solid #7ec7ff;
+    background: #232b33;
+}
+.ps-slider::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #232323;
+    border: 2.5px solid #4a90e2;
+    box-shadow: 0 2px 8px rgba(76,144,226,0.18);
+    cursor: pointer;
+    transition: border 0.2s, box-shadow 0.2s;
+}
+.ps-slider:focus::-moz-range-thumb,
+.ps-slider:hover::-moz-range-thumb {
+    border: 2.5px solid #7ec7ff;
+    background: #232b33;
+}
+.ps-slider::-ms-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #232323;
+    border: 2.5px solid #4a90e2;
+    box-shadow: 0 2px 8px rgba(76,144,226,0.18);
+    cursor: pointer;
+    transition: border 0.2s, box-shadow 0.2s;
+}
+.ps-slider:focus::-ms-thumb,
+.ps-slider:hover::-ms-thumb {
+    border: 2.5px solid #7ec7ff;
+    background: #232b33;
+}
+.ps-slider::-ms-fill-lower {
+    background: #444;
+    border-radius: 6px;
+}
+.ps-slider::-ms-fill-upper {
+    background: #232323;
+    border-radius: 6px;
+}
+.ps-slider:focus::-ms-fill-lower {
+    background: #4a90e2;
+}
+.ps-slider:focus::-ms-fill-upper {
+    background: #232323;
+}
+.ps-slider-value {
+    width: 60px;
+    font-size: 16px;
+    padding: 6px 0;
+    background: #232323;
+    color: #fff;
+    border: 1.5px solid #444;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08) inset;
+    font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+    letter-spacing: 1px;
+    transition: border 0.2s, box-shadow 0.2s;
+}
+.ps-slider-value:focus {
+    border: 1.5px solid #4a90e2;
+    box-shadow: 0 0 0 2px rgba(76,144,226,0.15);
+    background: #232b33;
+}
+.ps-advance-btn {
+    background: linear-gradient(180deg, #232323 60%, #353535 100%);
+    color: #fff;
+    border: 1.5px solid #4a90e2;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+    cursor: pointer;
+    margin-left: 8px;
+    box-shadow: 0 2px 8px rgba(76, 144, 226, 0.10);
+    transition: background 0.2s, border 0.2s, color 0.2s;
+    outline: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+.ps-advance-btn:hover {
+    background: linear-gradient(180deg, #4a90e2 0%, #232323 100%);
+    border: 1.5px solid #7ec7ff;
+    color: #fff;
+}
+.ps-advance-btn:active {
+    background: #232b33;
+    border: 1.5px solid #4a90e2;
+}
+.ps-generate-btn {
+    width: 100%;
+    padding: 14px 0;
+    font-size: 18px;
+    font-weight: bold;
+    color: #fff;
+    background: linear-gradient(180deg, #353535 0%, #232323 100%);
+    border: 1.5px solid #4a90e2;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(76, 144, 226, 0.10);
+    cursor: pointer;
+    margin-top: 10px;
+    letter-spacing: 2px;
+    transition: background 0.2s, box-shadow 0.2s, border 0.2s;
+    outline: none;
+}
+.ps-generate-btn:hover {
+    background: linear-gradient(180deg, #232323 0%, #4a90e2 100%);
+    border: 1.5px solid #7ec7ff;
+    box-shadow: 0 4px 16px rgba(76, 144, 226, 0.18);
+}
+.ps-advance-panel {
+    width: 100%;
+    max-width: 340px;
+    min-width: 260px;
+    margin: 18px auto 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+.ps-advance-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 8px;
+    margin-top: 8px;
+}
+.ps-advance-panel .ps-slider-row {
+    background: #232323;
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 18px 18px 12px 18px;
+    margin-bottom: 0;
+    margin-top: 0;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.ps-advance-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+/* 多图片上传网格样式 */
+.multi-upload-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.upload-box.small {
+    min-height: 80px;
+    max-width: none;
+    width: 100%;
+}
+
+.upload-box.small .upload-placeholder {
+    font-size: 13px;
+    padding: 12px 0;
+}
+
+.upload-box.small img {
+    max-height: 60px;
+}
+
+/* 360度上传网格样式（3列布局） */
+.multi-upload-grid[data-type="360"] {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+/* 拖拽状态样式 */
+.upload-box.dragover {
+    border-color: #4a90e2;
+    background: rgba(74, 144, 226, 0.1);
+}
+
+.upload-box.small.dragover {
+    border-color: #4a90e2;
+    background: rgba(74, 144, 226, 0.1);
+}
+
+/* 垂直布局样式 */
+.multi-upload-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.upload-section-original {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.upload-section-reference {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.upload-section-original .upload-box.small {
+    margin-bottom: 8px;
+}
+
+.upload-section-original .upload-box.small:last-child {
+    margin-bottom: 0;
+}
+
+/* 提示词输入框样式 */
+.prompt-inputs-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.prompt-inputs-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.ps-form-input.small {
+    padding: 8px 12px;
+    font-size: 14px;
+    min-height: auto;
+}
+
+.prompt-inputs-grid .ps-form-input.small {
+    font-size: 13px;
+    padding: 6px 10px;
+}
+
+/* 多角度提示词分组样式 */
+.prompt-group {
+    border: 1px solid #22263a;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    padding: 4px 10px 6px 10px;
+    background: transparent;
+}
+.prompt-label {
+    display: block;
+    color: #bfc6e0;
+    font-size: 15px;
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+.prompt-group:last-child {
+    margin-bottom: 0;
+}
+
+.multi-style-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ps-form-input.weight-input {
+    max-width: 220px;
+    min-width: 100px;
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.center-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.ps-form-select[size] {
+    border: 1.5px solid #4a90e2;
+    border-radius: 8px;
+    background: #181818;
+    color: #fff;
+    box-shadow: 0 4px 24px rgba(76,144,226,0.10);
+    outline: none;
+    font-size: 15px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    transition: border 0.2s, box-shadow 0.2s;
+    scrollbar-width: thin;
+    scrollbar-color: #4a90e2 #232323;
+}
+.ps-form-select[size]:focus {
+    border: 1.5px solid #7ec7ff;
+    box-shadow: 0 6px 32px rgba(76,144,226,0.18);
+}
+.ps-form-select[size] option {
+    background: #232323;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 0;
+}
+.ps-form-select[size]::-webkit-scrollbar {
+    width: 8px;
+    background: #232323;
+}
+.ps-form-select[size]::-webkit-scrollbar-thumb {
+    background: #4a90e2;
+    border-radius: 4px;
+} 

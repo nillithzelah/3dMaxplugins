@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link href="./css/style.css" type="text/css" rel="stylesheet">
+    <title>PS风格面板</title>
+</head>
+<body>
+    <div class="ps-panel">
+        <div class="ps-tabs">
+            <div class="ps-tab active" data-tab="tab1">室内设计</div>
+            <div class="ps-tab" data-tab="tab2">建筑规划</div>
+            <div class="ps-tab" data-tab="tab3">景观设计</div>
+            <div class="ps-tab" data-tab="tab4">图像处理</div>
+        </div>
+        <div class="ps-content">
+            <div class="ps-section tab-content" id="tab1-content" style="display:block;">
+                <label for="ps-select1" class="ps-label">室内设计选项：</label>
+                <select id="ps-select1" class="ps-select">
+                    <option value="1">彩平图</option>
+                    <option value="2">毛坯房出图</option>
+                    <option value="3">线稿出图</option>
+                    <option value="4">白模渲染</option>
+                    <option value="5">多角度（白模）</option>
+                    <option value="6">多角度（线稿）</option>
+                    <option value="7">多风格（白模）</option>
+                    <option value="8">多风格（线稿）</option>
+                    <option value="9">风格转换</option>
+                    <option value="10">360出图</option>
+                </select>
+            </div>
+            <div class="ps-section tab-content" id="tab2-content" style="display:none;">
+                <label for="ps-select2" class="ps-label">建筑规划选项：</label>
+                <select id="ps-select2" class="ps-select">
+                    <option value="1">彩平图</option>
+                    <option value="2">现场出图</option>
+                    <option value="3">线稿出图</option>
+                    <option value="4">白模透视（精确）</option>
+                    <option value="5">白模透视（体块）</option>
+                    <option value="6">白模鸟瞰（精确）</option>
+                    <option value="7">白模鸟瞰（体块）</option>
+                    <option value="8">白天变夜景</option>
+                    <option value="9">亮化工程</option>
+                </select>
+            </div>
+            <div class="ps-section tab-content" id="tab3-content" style="display:none;">
+                <label for="ps-select3" class="ps-label">景观设计选项：</label>
+                <select id="ps-select3" class="ps-select">
+                    <option value="1">彩平图</option>
+                    <option value="2">现场出图</option>
+                    <option value="3">现场（局部）参考局部</option>
+                    <option value="4">线稿出图</option>
+                    <option value="5">白模（透视）</option>
+                    <option value="6">白模（鸟瞰）</option>
+                    <option value="7">白天转夜景</option>
+                    <option value="8">亮化工程</option>
+                </select>
+            </div>
+            <div class="ps-section tab-content" id="tab4-content" style="display:none;">
+                <label for="ps-select4" class="ps-label">图像处理选项：</label>
+                <select id="ps-select4" class="ps-select">
+                    <option value="1">指定换材质</option>
+                    <option value="2">修改局部</option>
+                    <option value="3">AI去除万物</option>
+                    <option value="4">AI去水印</option>
+                    <option value="5">增加物体</option>
+                    <option value="6">增加物体（指定物体）</option>
+                    <option value="7">替换（产品）</option>
+                    <option value="8">替换（背景天花）</option>
+                    <option value="9">扩图</option>
+                    <option value="10">洗图</option>
+                    <option value="11">图像增强</option>
+                    <option value="12">溶图</option>
+                    <option value="13">溶图（局部）</option>
+                    <option value="14">放大出图</option>
+                    <option value="15">老照片修复</option>
+                </select>
+            </div>
+            <div id="ps-dynamic-content"></div>
+        </div>
+        <div class="ps-footer" id="ps-footer-content">
+            <div id="ps-footer-btn"></div>
+        </div>
+    </div>
+    <script type="text/javascript" src="./js/CSInterface.js"></script>
+    <script type="text/javascript" src="./js/main.js"></script>
+</body>
+</html> 
