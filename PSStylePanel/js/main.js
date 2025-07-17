@@ -200,6 +200,7 @@ function updateFooterForInterior(val) {
     }
     // 其他按钮事件绑定
     bindButtonEvents();
+    updateAdvancedParams(titleMap[val] || '室内设计');
 }
 
 // 为其他标签页（建筑、景观、图像）显示默认内容
@@ -513,6 +514,7 @@ function updateFooterForOtherTabs(tabIdx, val) {
         };
     }
     bindButtonEvents();
+    updateAdvancedParams(tabNames[tabIdx] + '-' + selectedText);
 }
 
 // 根据选项生成不同的上传区域
@@ -567,20 +569,32 @@ function generatePromptSection(optionValue, tabIdx) {
     }
     // 图像处理tab的溶图增加横竖图切换
     if (tabIdx === 3 && String(optionValue) === '12') {
-        return `<div class=\"ps-form-block\">\n    <label class=\"ps-form-label\">提示词</label>\n    <input type=\"text\" class=\"ps-form-input\" id=\"promptInput\" value=\"\">\n</div>\n<div class=\"ps-form-block\">\n    <label class=\"ps-form-label\">横竖图切换</label>\n    <div style=\"display:flex;align-items:center;margin-top:8px;\">\n        <input type=\"checkbox\" id=\"condSwitch\" checked style=\"width:18px;height:18px;margin-right:8px;\">\n        <span style=\"font-size:16px;color:#fff;\">Cond</span>\n    </div>\n</div>`;
+        return `<div class=\"ps-form-block\">\n    <label class=\"ps-form-label\">提示词</label>\n    <input type=\"text\" class=\"ps-form-input\" id=\"promptInput\" value=\"\"\n></div>\n<div class=\"ps-form-block\">\n    <label class=\"ps-form-label\">横竖图切换</label>\n    <div style=\"display:flex;align-items:center;margin-top:8px;\">\n        <input type=\"checkbox\" id=\"condSwitch\" checked style=\"width:18px;height:18px;margin-right:8px;\">\n        <span style=\"font-size:16px;color:#fff;\">Cond</span>\n    </div>\n</div>`;
     }
-    // 只有室内设计tab的多角度和多风格选项才使用特殊提示词区域
+    // 室内设计tab的多角度和多风格选项
     if (tabIdx === 0) {
-    var promptSections = {
-        '5': generateMultiAnglePromptSection(), // 多角度（白模）
-        '6': generateMultiAnglePromptSection(), // 多角度（线稿）
-        '7': generateMultiStylePromptSection(), // 多风格（白模）
-        '8': generateMultiStylePromptSection()  // 多风格（线稿）
-    };
-    return promptSections[optionValue] || generateDefaultPromptSection();
+        var promptSections = {
+            '5': generateMultiAnglePromptSection(), // 多角度（白模）
+            '6': generateMultiAnglePromptSection(), // 多角度（线稿）
+            '7': generateMultiStylePromptSection(), // 多风格（白模）
+            '8': generateMultiStylePromptSection()  // 多风格（线稿）
+        };
+        if (promptSections[optionValue]) return promptSections[optionValue];
+        // 获取下拉框选中的中文名
+        var select = document.getElementById('ps-select1');
+        var optionName = '';
+        if (select) {
+            optionName = select.options[select.selectedIndex].text;
+        }
+        return generateDefaultPromptSection(optionName);
     }
-    // 其他tab都使用默认提示词区域
-    return generateDefaultPromptSection();
+    // 其他tab获取对应下拉框的选项名
+    var select = document.getElementById('ps-select' + (tabIdx + 1));
+    var optionName = '';
+    if (select) {
+        optionName = select.options[select.selectedIndex].text;
+    }
+    return generateDefaultPromptSection(optionName);
 }
 
 // 生成默认上传区域（单张图片）
@@ -590,29 +604,29 @@ function generateDefaultUploadSection() {
 
 // 生成多角度上传区域（4张图片）
 function generateMultiAngleUploadSection() {
-    return `<div class="upload-section">
+    return `<div class="upload-section" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
                 <div class="multi-upload-vertical">
-                    <div class="upload-section-original">
+                    <div class="upload-section-original" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
                         <div class="upload-header">
                             <span class="upload-label">原始图像1</span>
                         </div>
-                        <select class="ps-form-select" id="layerSelect1">
+                        <select class="ps-form-select" id="layerSelect1" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
                             <option value="">请选择图层</option>
                         </select>
                         <div class="upload-header" style="margin-top:12px;">
                             <span class="upload-label">原始图像2</span>
                         </div>
-                        <select class="ps-form-select" id="layerSelect2">
+                        <select class="ps-form-select" id="layerSelect2" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
                             <option value="">请选择图层</option>
                         </select>
                         <div class="upload-header" style="margin-top:12px;">
                             <span class="upload-label">原始图像3</span>
                         </div>
-                        <select class="ps-form-select" id="layerSelect3">
+                        <select class="ps-form-select" id="layerSelect3" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
                             <option value="">请选择图层</option>
                         </select>
                     </div>
-                    <div class="upload-section-reference">
+                    <div class="upload-section-reference" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
                         <div class="upload-header">
                             <span class="upload-label">参考图像</span>
                             <span class="upload-switch">
@@ -620,7 +634,7 @@ function generateMultiAngleUploadSection() {
                                 <button class="switch-btn" id="libRefBtn">参考图片库</button>
                             </span>
                         </div>
-                        <div class="upload-box small">
+                        <div class="upload-box small" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
                             <input type="file" id="uploadInput4" style="display:none;" accept="image/*">
                             <div class="upload-placeholder" id="uploadPlaceholder4">
                                 <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
@@ -639,8 +653,8 @@ function generateMultiAngleUploadSection() {
 function generateMultiStyleUploadSection() {
     return `
         <div class="multi-style-vertical">
-            <div class="upload-section">
-                <div class="upload-section-reference">
+            <div class="upload-section" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
+                <div class="upload-section-reference" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
                     <div class="upload-header">
                         <span class="upload-label">参考图像1</span>
                         <span class="upload-switch">
@@ -648,7 +662,7 @@ function generateMultiStyleUploadSection() {
                             <button class="switch-btn" id="libRefBtn1">参考图片库</button>
                         </span>
                     </div>
-                    <div class="upload-box">
+                    <div class="upload-box" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
                         <input type="file" id="uploadInput1" style="display:none;" accept="image/*">
                         <div class="upload-placeholder" id="uploadPlaceholder1">
                             <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
@@ -660,8 +674,8 @@ function generateMultiStyleUploadSection() {
                     </div>
                 </div>
             </div>
-            <div class="upload-section">
-                <div class="upload-section-reference">
+            <div class="upload-section" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
+                <div class="upload-section-reference" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
                     <div class="upload-header">
                         <span class="upload-label">参考图像2</span>
                         <span class="upload-switch">
@@ -669,7 +683,7 @@ function generateMultiStyleUploadSection() {
                             <button class="switch-btn" id="libRefBtn2">参考图片库</button>
                         </span>
                     </div>
-                    <div class="upload-box">
+                    <div class="upload-box" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
                         <input type="file" id="uploadInput2" style="display:none;" accept="image/*">
                         <div class="upload-placeholder" id="uploadPlaceholder2">
                             <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
@@ -681,8 +695,8 @@ function generateMultiStyleUploadSection() {
                     </div>
                 </div>
             </div>
-            <div class="upload-section">
-                <div class="upload-section-reference">
+            <div class="upload-section" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
+                <div class="upload-section-reference" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
                     <div class="upload-header">
                         <span class="upload-label">参考图像3</span>
                         <span class="upload-switch">
@@ -690,7 +704,7 @@ function generateMultiStyleUploadSection() {
                             <button class="switch-btn" id="libRefBtn3">参考图片库</button>
                         </span>
                     </div>
-                    <div class="upload-box">
+                    <div class="upload-box" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
                         <input type="file" id="uploadInput3" style="display:none;" accept="image/*">
                         <div class="upload-placeholder" id="uploadPlaceholder3">
                             <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
@@ -787,18 +801,18 @@ function generateDualLayerSelectSection() {
 // 生成多角度提示词区域（3个输入框，带分组标题）
 function generateMultiAnglePromptSection() {
     return `
-        <div class="ps-form-block">
-            <div class="prompt-group">
+        <div class="ps-form-block" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
+            <div class="prompt-group" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
                 <label class="prompt-label">提示词1</label>
-                <input type="text" class="ps-form-input small" id="promptInput1" value="卧室，现代风格" placeholder="请输入提示词1">
+                <input type="text" class="ps-form-input small" id="promptInput1" value="书房，现代风格，书桌" placeholder="请输入提示词1" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
             </div>
-            <div class="prompt-group">
+            <div class="prompt-group" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
                 <label class="prompt-label">提示词2</label>
-                <input type="text" class="ps-form-input small" id="promptInput2" value="客厅，现代风格" placeholder="请输入提示词2">
+                <input type="text" class="ps-form-input small" id="promptInput2" value="卧室，现代风格" placeholder="请输入提示词2" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
             </div>
-            <div class="prompt-group">
+            <div class="prompt-group" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
                 <label class="prompt-label">提示词3</label>
-                <input type="text" class="ps-form-input small" id="promptInput3" value="书房，现代风格" placeholder="请输入提示词3">
+                <input type="text" class="ps-form-input small" id="promptInput3" value="客厅，现代风格" placeholder="请输入提示词3" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
             </div>
         </div>
     `;
@@ -807,29 +821,144 @@ function generateMultiAnglePromptSection() {
 // 生成多风格提示词区域（三个分组，带标题和分组样式）
 function generateMultiStylePromptSection() {
     return `
-        <div class="ps-form-block">
-            <div class="prompt-group">
+        <div class="ps-form-block" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
+            <div class="prompt-group" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
                 <label class="prompt-label">提示词1</label>
-                <input type="text" class="ps-form-input small" id="promptInput1" value="风格1，现代风格" placeholder="请输入提示词1">
+                <input type="text" class="ps-form-input small" id="promptInput1" value="卧室，现代风格" placeholder="请输入提示词1" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
             </div>
-            <div class="prompt-group">
+            <div class="prompt-group" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
                 <label class="prompt-label">提示词2</label>
-                <input type="text" class="ps-form-input small" id="promptInput2" value="风格2，现代风格" placeholder="请输入提示词2">
+                <input type="text" class="ps-form-input small" id="promptInput2" value="客厅，现代风格" placeholder="请输入提示词2" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
             </div>
-            <div class="prompt-group">
+            <div class="prompt-group" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
                 <label class="prompt-label">提示词3</label>
-                <input type="text" class="ps-form-input small" id="promptInput3" value="风格3，现代风格" placeholder="请输入提示词3">
+                <input type="text" class="ps-form-input small" id="promptInput3" value="书房，现代风格" placeholder="请输入提示词3" style="width:100%;max-width:220px;min-width:180px;margin:0 auto;">
             </div>
         </div>
     `;
 }
 
-// 生成默认提示词区域（单个输入框）
-function generateDefaultPromptSection() {
+function generateDefaultPromptSection(optionName) {
+    // 选项名到提示词的映射（与index.html下拉框文本完全一致）
+    const promptMap = {
+        // 室内设计
+        '彩平图': '彩平图',
+        '毛坯房出图': '客厅,复古法式风格，金属茶几，沙发，地毯，装饰品，阳台，极精细的细节，吊灯',
+        '线稿出图': '卧室，现代风格',
+        '白模渲染': '卧室，现代风格，电脑，书，电脑椅',
+        '多角度（白模）': '', // 多角度和多风格用专用函数生成
+        '多角度（线稿）': '',
+        '多风格（白模）': '',
+        '多风格（线稿）': '',
+        '风格转换': '客厅，中式风格，',
+        '360出图': 'create a 360 hdr,',
+        // 建筑规划
+        '彩平图': '建筑彩平图',
+        '现场出图': '建筑工地，现代风格',
+        '线稿出图': '建筑线稿，简约风格',
+        '白模透视（精确）': '建筑白模，精确透视',
+        '白模透视（体块）': '建筑体块白模，鸟瞰',
+        '白模鸟瞰（精确）': '建筑鸟瞰，精确建模',
+        '白模鸟瞰（体块）': '建筑鸟瞰，体块模型',
+        '白天变夜景': '夜景，灯光渲染',
+        '亮化工程': '建筑亮化，灯光设计',
+        // 景观设计
+        '彩平图': '景观彩平图',
+        '现场出图': '景观现场，现代风格',
+        '现场（局部）参考局部': '局部景观，参考对比',
+        '线稿出图': '景观线稿，简约风格',
+        '白模（透视）': '景观白模，透视效果',
+        '白模（鸟瞰）': '景观鸟瞰，白模',
+        '白天转夜景': '夜景，灯光渲染',
+        '亮化工程': '景观亮化，灯光设计',
+        // 图像处理
+        '指定换材质': '替换为新材质',
+        '修改局部': '局部修改，细节增强',
+        'AI去除万物': '去除指定物体',
+        'AI去水印': '去除水印',
+        '增加物体': '添加新物体',
+        '增加物体（指定物体）': '添加指定物体',
+        '替换（产品）': '产品替换',
+        '替换（背景天花）': '替换背景或天花板',
+        '扩图': '扩展画面',
+        '洗图': '图像清洗，去噪',
+        '图像增强': '图像增强，细节提升',
+        '溶图': '图像融合',
+        '溶图（局部）': '局部溶图，融合效果',
+        '放大出图': '图像放大，高清',
+        '老照片修复': '老照片修复，去划痕'
+    };
+    let prompt = '彩平图';
+    if (optionName && promptMap[optionName]) {
+        prompt = promptMap[optionName];
+    }
     return `<div class=\"ps-form-block\">
                 <label class=\"ps-form-label\">提示词</label>
-                <input type=\"text\" class=\"ps-form-input\" id=\"promptInput\" value=\"彩平图\">
+                <input type=\"text\" class=\"ps-form-input\" id=\"promptInput\" value=\"${prompt}\" placeholder=\"请输入提示词\">
             </div>`;
+}
+
+// 选项名到高级参数默认值的映射（写死，和json保持一致）
+const advancedDefaults = {
+    // 室内设计
+    '彩平图': { strength: 0.55, refWeight: 0.8, start: 0, end: 1 },
+    '毛坯房出图': { strength: 0.55, refWeight: 0.8, start: 0, end: 1 },
+    '线稿出图': { strength: 0.55, refWeight: 0.8, start: 0, end: 1 },
+    '白模渲染': { strength: 0.55, refWeight: 0.8, start: 0, end: 1 },
+    '风格转换': { strength: 0.55, refWeight: 0.8, start: 0, end: 1 },
+    '360出图': { strength: 0.55, refWeight: 0.8, start: 0, end: 1 },
+    // 建筑规划
+    '彩平图': { strength: 0.8, refWeight: 0.6, start: 0, end: 1 },
+    '现场出图': { strength: 0.8, refWeight: 0.6, start: 0, end: 1 },
+    '线稿出图': { strength: 0.8, refWeight: 0.6, start: 0, end: 1 },
+    '白模透视（精确）': { strength: 0.8, refWeight: 0.6, start: 0, end: 1 },
+    '白模透视（体块）': { strength: 0.8, refWeight: 0.6, start: 0, end: 1 },
+    '白模鸟瞰（精确）': { strength: 0.8, refWeight: 0.6, start: 0, end: 1 },
+    '白模鸟瞰（体块）': { strength: 0.8, refWeight: 0.6, start: 0, end: 1 },
+    '白天变夜景': { strength: 0.8, refWeight: 0.6, start: 0, end: 1 },
+    '亮化工程': { strength: 0.8, refWeight: 0.6, start: 0, end: 1 },
+    // 景观设计
+    '彩平图': { strength: 0.8, refWeight: 0.6, start: 0, end: 1 },
+    '现场出图': { strength: 0.8, refWeight: 0.6, start: 0, end: 1 },
+    '现场（局部）参考局部': { strength: 0.8, refWeight: 0.6, start: 0, end: 1 },
+    '线稿出图': { strength: 0.8, refWeight: 0.6, start: 0, end: 1 },
+    '白模（透视）': { strength: 0.8, refWeight: 0.6, start: 0, end: 1 },
+    '白模（鸟瞰）': { strength: 0.8, refWeight: 0.6, start: 0, end: 1 },
+    '白天转夜景': { strength: 0.8, refWeight: 0.6, start: 0, end: 1 },
+    '亮化工程': { strength: 0.8, refWeight: 0.6, start: 0, end: 1 },
+    // 图像处理（如需可补充）
+};
+
+// 切换选项时自动同步高级参数默认值
+function updateAdvancedParams(optionName) {
+    const defaults = advancedDefaults[optionName] || { strength: 0.55, refWeight: 0.8, start: 0, end: 1 };
+    // 控制强度
+    var strengthSlider = document.getElementById('strengthSlider');
+    var sliderValue = document.getElementById('sliderValue');
+    if(strengthSlider && sliderValue) {
+        strengthSlider.value = defaults.strength;
+        sliderValue.value = defaults.strength;
+    }
+    // 参考图权重（如有）
+    var refWeightSlider = document.getElementById('refWeightSlider');
+    var refWeightValue = document.getElementById('refWeightValue');
+    if(refWeightSlider && refWeightValue) {
+        refWeightSlider.value = defaults.refWeight;
+        refWeightValue.value = defaults.refWeight;
+    }
+    // 控制开始/结束时间（如有）
+    var startTimeSlider = document.getElementById('startTimeSlider');
+    var startTimeValue = document.getElementById('startTimeValue');
+    if(startTimeSlider && startTimeValue) {
+        startTimeSlider.value = defaults.start;
+        startTimeValue.value = defaults.start;
+    }
+    var endTimeSlider = document.getElementById('endTimeSlider');
+    var endTimeValue = document.getElementById('endTimeValue');
+    if(endTimeSlider && endTimeValue) {
+        endTimeSlider.value = defaults.end;
+        endTimeValue.value = defaults.end;
+    }
 }
 
 // 获取图层列表并填充下拉框
