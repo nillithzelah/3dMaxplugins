@@ -4,7 +4,58 @@
 # 直接在3ds Max的Python窗口运行即可
 
 import os
+import json
+import hashlib
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from PySide2 import QtWidgets, QtCore, QtGui
+from PySide2.QtCore import QUrl
+from PySide2.QtGui import QDesktopServices
+
+# 全局变量
+current_username = "admin"  # 保存当前登录的用户名
+login_window_instance = None  # 保存登录窗口实例
+main_panel_instance = None  # 保存主面板实例
+
+TOKEN_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "user_token.txt")
+
+# 本地token HTTP服务
+class TokenHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path.startswith('/token?value='):
+            token = self.path.split('=')[1]
+            if token:
+                with open(TOKEN_FILE, 'w', encoding='utf-8') as f:
+                    f.write(token)
+            else:
+                # token为空时删除本地token文件
+                if os.path.exists(TOKEN_FILE):
+                    os.remove(TOKEN_FILE)
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(b'OK')
+        else:
+            self.send_response(404)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+
+def start_token_server():
+    def run():
+        try:
+            server = HTTPServer(('127.0.0.1', 5000), TokenHandler)
+            server.serve_forever()
+        except Exception as e:
+            print(f"Token HTTP服务启动失败: {e}")
+    threading.Thread(target=run, daemon=True).start()
+
+# 检查本地token
+def is_logged_in():
+    return os.path.exists(TOKEN_FILE)
+
+def open_web_login():
+    QDesktopServices.openUrl(QUrl("http://192.168.1.134:81/"))
+    QtWidgets.QMessageBox.information(None, "登录引导", "请在弹出的网页中完成登录，登录成功后返回插件页面。\n\n网页端会自动写入本地token，无需手动操作。")
 
 # =========================
 # 上传图片控件（支持拖拽和点击上传）
@@ -355,19 +406,30 @@ class TabContentWidget(QtWidgets.QWidget):
     }
     def __init__(self, tabName, parent=None):
         super(TabContentWidget, self).__init__(parent)
-        # 下拉栏选项映射（每个Tab不同）
-        tab_options = {
-            '室内设计': ['彩平图', '毛坯房出图', '线稿出图', '白模渲染', '多风格（白模）', '多风格（线稿）', '风格转换', '360出图'],
-            '建筑规划': ['彩平图', '现场出图', '线稿出图', '白模透视（精确）', '白模透视（体块）', '白模鸟瞰（精确）', '白模鸟瞰（体块）', '白天变夜景', '亮化工程'],
-            '景观设计': ['彩平图', '现场出图', '现场（局部）参考局部', '线稿出图', '白模（透视）', '白模（鸟瞰）', '白天转夜景', '亮化工程'],
-            '图像处理': ['指定换材质', '修改局部', 'AI去除万物', 'AI去水印', '增加物体', '增加物体（指定物体）', '替换（产品）', '替换（背景天花）', '扩图', '洗图', '图像增强', '溶图（局部）', '放大出图', '老照片修复']
-        }
-        # 真正的内容widget
-        contentWidget = QtWidgets.QWidget()
-        contentWidget.setMaximumWidth(520)  # 统一内容区宽度
-        contentLayout = QtWidgets.QVBoxLayout(contentWidget)
-        contentLayout.setContentsMargins(0, 0, 0, 0)
-        contentLayout.setSpacing(18)
+        try:
+            # 下拉栏选项映射（每个Tab不同）
+            tab_options = {
+                '室内设计': ['彩平图', '毛坯房出图', '线稿出图', '白模渲染', '多风格（白模）', '多风格（线稿）', '风格转换', '360出图'],
+                '建筑规划': ['彩平图', '现场出图', '线稿出图', '白模透视（精确）', '白模透视（体块）', '白模鸟瞰（精确）', '白模鸟瞰（体块）', '白天变夜景', '亮化工程'],
+                '景观设计': ['彩平图', '现场出图', '现场（局部）参考局部', '线稿出图', '白模（透视）', '白模（鸟瞰）', '白天转夜景', '亮化工程'],
+                '图像处理': ['指定换材质', '修改局部', 'AI去除万物', 'AI去水印', '增加物体', '增加物体（指定物体）', '替换（产品）', '替换（背景天花）', '扩图', '洗图', '图像增强', '溶图（局部）', '放大出图', '老照片修复']
+            }
+            # 真正的内容widget
+            contentWidget = QtWidgets.QWidget()
+            contentWidget.setMaximumWidth(520)  # 统一内容区宽度
+            contentLayout = QtWidgets.QVBoxLayout(contentWidget)
+            contentLayout.setContentsMargins(0, 0, 0, 0)
+            contentLayout.setSpacing(18)
+        except Exception as e:
+            import traceback
+            error_msg = f"初始化TabContentWidget时出错: {str(e)}\n{traceback.format_exc()}"
+            print(error_msg)
+            # 显示一个简单的错误消息
+            errorLabel = QtWidgets.QLabel(f"初始化失败: {str(e)}")
+            errorLabel.setStyleSheet("color: red; font-size: 16px;")
+            errorLayout = QtWidgets.QVBoxLayout(self)
+            errorLayout.addWidget(errorLabel)
+            return
         # 下拉栏（悬浮）
         # 顶部标题
         self.titleLabel = QtWidgets.QLabel()
@@ -545,7 +607,7 @@ QPushButton:pressed {
             tabName = tabWidget.parent().tabWidget.tabText(idx)
         optionText = self.comboBox.currentText()
         self.titleLabel.setText(optionText)
-        # 针对“溶图（局部）”特殊处理：2上传区+1提示词
+        # 针对"溶图（局部）"特殊处理：2上传区+1提示词
         if option == "溶图（局部）":
             upload_labels = ["参考图像1", "参考图像2"]
             for label in upload_labels:
@@ -646,7 +708,6 @@ QPushButton:pressed {
                 advLayout.addLayout(paramLayout)
             advGroup.setContentLayout(advLayout)
             self.dynamicLayout.addWidget(advGroup)
-            self._addBottomBtn(self._generateBtn())
             return
         # 配置驱动多上传区+多提示词
         if option in self.UPLOAD_PROMPT_CONFIG or option in ["多风格（白模）", "多风格（线稿）"]:
@@ -659,25 +720,24 @@ QPushButton:pressed {
                         self.dynamicLayout.addSpacing(12)
             else:
                 # 默认3组上传区+提示词
-            for i in range(3):
-                    upload_label = f"参考图像{i+1}"
-                    prompt_label = f"提示词{i+1}"
-                    prompt_default = self.MULTI_PROMPT_DEFAULTS.get(option, ["", "", ""])[i]
-                    widget = self.UploadWithPromptWidget(upload_label, prompt_label, prompt_default)
-                    self.dynamicLayout.addWidget(widget)
+                for i in range(3):
+                        upload_label = f"参考图像{i+1}"
+                        prompt_label = f"提示词{i+1}"
+                        prompt_default = self.MULTI_PROMPT_DEFAULTS.get(option, ["", "", ""])[i]
+                        widget = self.UploadWithPromptWidget(upload_label, prompt_label, prompt_default)
+                        self.dynamicLayout.addWidget(widget)
                 if i < 2:
                     self.dynamicLayout.addSpacing(12)
             self.dynamicLayout.addLayout(self._strengthSlider())
             self.dynamicLayout.addWidget(self._advancedParams())
-            self._addBottomBtn(self._generateBtn())
         else:
             # 单上传区+单提示词
             widget = self.UploadWithPromptWidget("参考图像", "提示词", self.PROMPT_DEFAULTS.get(option, ""))
             self.dynamicLayout.addWidget(widget)
-            if option in ["彩平图", "线稿出图", "风格转换"]:
-            self.dynamicLayout.addLayout(self._strengthSlider())
-            self.dynamicLayout.addWidget(self._advancedParams())
-            self._addBottomBtn(self._generateBtn())
+            if tabName == "图像处理" or option in ["彩平图", "线稿出图", "风格转换"]:
+                self.dynamicLayout.addLayout(self._strengthSlider())
+                self.dynamicLayout.addWidget(self._advancedParams())
+        self._addBottomBtn(self._generateBtn())
 
     # 复用控件生成函数
     def _uploadGroup(self, multi=False, label_text="参考图像"):
@@ -1252,21 +1312,28 @@ QPushButton:pressed {
         self.bottomBtnLayout.addStretch(1)
 
     def capture_max_view(self):
-        import os
-        debug_dir = r'C:\Temp'
-        if not os.path.exists(debug_dir):
-            os.makedirs(debug_dir)
-        with open(r'C:\Temp\max_debug.txt', 'a', encoding='utf-8') as f:
-            f.write('回调已触发\n')
-        print("capture_max_view clicked")
-        import tempfile
-        temp_path = os.path.join(tempfile.gettempdir(), "quick_viewport_capture.jpg")
-        ms_path = temp_path.replace('\\', '/')
-        print("图片保存路径：", temp_path)
         try:
-            with open(r'C:\Temp\max_debug.txt', 'a', encoding='utf-8') as f:
-                f.write('开始截图...\n')
-            import pymxs
+            # 尝试导入pymxs模块
+            try:
+                import pymxs
+            except ImportError:
+                # 如果无法导入pymxs模块，显示一个消息框
+                self.viewImageLabel.setText("获取视图功能需要在3ds Max环境中运行")
+                msgBox = QtWidgets.QMessageBox()
+                msgBox.setIcon(QtWidgets.QMessageBox.Information)
+                msgBox.setWindowTitle("提示")
+                msgBox.setText("获取视图功能需要在3ds Max环境中运行")
+                msgBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
+                msgBox.exec_()
+                return
+            
+            # 如果成功导入pymxs模块，继续执行原来的代码
+            import os
+            import tempfile
+            temp_path = os.path.join(tempfile.gettempdir(), "quick_viewport_capture.jpg")
+            ms_path = temp_path.replace('\\', '/')
+            
+            # 执行截图代码
             rt = pymxs.runtime
             old_vp = rt.viewport.activeViewport
             rt.viewport.activeViewport = 4  # 切换到右下角视口
@@ -1281,44 +1348,525 @@ try (
 ) catch ()
 ''')
             rt.viewport.activeViewport = old_vp  # 恢复原激活视口
-            print("截图代码已执行")
-            with open(r'C:\Temp\max_debug.txt', 'a', encoding='utf-8') as f:
-                f.write('截图代码已执行\n')
-            print("文件是否存在：", os.path.exists(temp_path))
-            with open(r'C:\Temp\max_debug.txt', 'a', encoding='utf-8') as f:
-                f.write(f'文件是否存在：{os.path.exists(temp_path)}\n')
-            # 图片加载
-            print("开始加载图片...")
-            pixmap = QtGui.QPixmap(temp_path)
-            if not pixmap.isNull():
-                scaled = pixmap.scaled(self.viewImageLabel.width(), self.viewImageLabel.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
-                self.viewImageLabel.setPixmap(scaled)
-                self.viewImageLabel.setText("")
+            
+            # 加载图片
+            if os.path.exists(temp_path):
+                pixmap = QtGui.QPixmap(temp_path)
+                if not pixmap.isNull():
+                    scaled = pixmap.scaled(self.viewImageLabel.width(), self.viewImageLabel.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+                    self.viewImageLabel.setPixmap(scaled)
+                    self.viewImageLabel.setText("")
+                else:
+                    self.viewImageLabel.setPixmap(QtGui.QPixmap())
+                    self.viewImageLabel.setText("未能加载图片")
             else:
-                self.viewImageLabel.setPixmap(QtGui.QPixmap())
-                self.viewImageLabel.setText("未获取到视图")
-            print("图片加载已执行")
-            with open(r'C:\Temp\max_debug.txt', 'a', encoding='utf-8') as f:
-                f.write('图片加载已执行\n')
+                self.viewImageLabel.setText("未能获取视图")
         except Exception as e:
-            print("捕获到异常：", e)
-            with open(r'C:\Temp\max_debug.txt', 'a', encoding='utf-8') as f:
-                f.write(f'捕获到异常：{e}\n')
+            # 捕获所有异常
+            self.viewImageLabel.setText(f"获取视图时出错: {str(e)}")
+            print(f"获取视图时出错: {str(e)}")
+
+# =========================
+# 登录窗口类
+# =========================
+class LoginWindow(QtWidgets.QWidget):
+    # 在PySide2中，信号需要这样定义
+    try:
+        loginSuccess = QtCore.Signal()
+    except AttributeError:
+        # 如果Signal不存在，尝试使用QSignal
+        try:
+            loginSuccess = QtCore.QSignal()
+        except AttributeError:
+            # 如果QSignal也不存在，使用SIGNAL/SLOT机制
+            print("警告：无法创建Signal，将使用旧式SIGNAL/SLOT机制")
+            loginSuccess = None  # 将在__init__中使用SIGNAL
+    
+    def __init__(self, parent=None):
+        super(LoginWindow, self).__init__(parent)
+        self.setWindowTitle("登录")
+        self.resize(400, 300)
+        self.setStyleSheet("background-color: #222;")
+        self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
+        
+        # 用户数据文件路径
+        self.user_data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "user_data.json")
+        
+        # 创建UI元素
+        self.createUI()
+        
+        # 创建默认账号（必须在创建UI元素之后）
+        self.create_default_account()
+        
+        # 初始化主面板实例为None
+        self.main_panel_instance = None
+        
+        # 自动填充用户名
+        auto_info = get_auto_login_info()
+        if auto_info and auto_info.get("username"):
+            self.usernameEdit.setText(auto_info["username"])
+        else:
+            self.usernameEdit.setText(current_username)
+        self.passwordEdit.setText("")
+    
+    def createUI(self):
+        """创建UI元素"""
+        # 创建布局
+        mainLayout = QtWidgets.QVBoxLayout(self)
+        mainLayout.setContentsMargins(40, 40, 40, 40)
+        mainLayout.setSpacing(20)
+        
+        # 标题
+        titleLabel = QtWidgets.QLabel("Max Style Panel")
+        titleLabel.setStyleSheet("""
+            color: #3af;
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        """)
+        titleLabel.setAlignment(QtCore.Qt.AlignCenter)
+        
+        # 用户名输入
+        usernameLayout = QtWidgets.QVBoxLayout()
+        usernameLabel = QtWidgets.QLabel("用户名")
+        usernameLabel.setStyleSheet("color: #fff; font-size: 14px;")
+        self.usernameEdit = QtWidgets.QLineEdit()
+        self.usernameEdit.setStyleSheet("""
+            QLineEdit {
+                background: #333;
+                color: #fff;
+                border: 2px solid #555;
+                border-radius: 6px;
+                padding: 8px;
+                font-size: 14px;
+            }
+            QLineEdit:focus {
+                border: 2px solid #3af;
+            }
+        """)
+        self.usernameEdit.setPlaceholderText("请输入用户名")
+        usernameLayout.addWidget(usernameLabel)
+        usernameLayout.addWidget(self.usernameEdit)
+        
+        # 密码输入
+        passwordLayout = QtWidgets.QVBoxLayout()
+        passwordLabel = QtWidgets.QLabel("密码")
+        passwordLabel.setStyleSheet("color: #fff; font-size: 14px;")
+        self.passwordEdit = QtWidgets.QLineEdit()
+        self.passwordEdit.setEchoMode(QtWidgets.QLineEdit.Password)
+        self.passwordEdit.setStyleSheet("""
+            QLineEdit {
+                background: #333;
+                color: #fff;
+                border: 2px solid #555;
+                border-radius: 6px;
+                padding: 8px;
+                font-size: 14px;
+            }
+            QLineEdit:focus {
+                border: 2px solid #3af;
+            }
+        """)
+        self.passwordEdit.setPlaceholderText("请输入密码")
+        passwordLayout.addWidget(passwordLabel)
+        passwordLayout.addWidget(self.passwordEdit)
+        
+        # 登录按钮
+        self.loginButton = QtWidgets.QPushButton("登录")
+        self.loginButton.setStyleSheet("""
+            QPushButton {
+                background-color: #3da9fc;
+                color: white;
+                border-radius: 6px;
+                font-weight: bold;
+                font-size: 16px;
+                padding: 10px 0;
+            }
+            QPushButton:hover {
+                background-color: #2176c1;
+            }
+            QPushButton:pressed {
+                background-color: #174e85;
+            }
+        """)
+        self.loginButton.clicked.connect(self.login)
+        
+        # 注册按钮
+        self.registerButton = QtWidgets.QPushButton("注册")
+        self.registerButton.setStyleSheet("""
+            QPushButton {
+                background-color: #444;
+                color: white;
+                border-radius: 6px;
+                font-weight: bold;
+                font-size: 16px;
+                padding: 10px 0;
+            }
+            QPushButton:hover {
+                background-color: #555;
+            }
+            QPushButton:pressed {
+                background-color: #333;
+            }
+        """)
+        self.registerButton.clicked.connect(self.register)
+        
+        # 自动登录选项
+        self.autoLoginCheck = QtWidgets.QCheckBox("自动登录")
+        self.autoLoginCheck.setStyleSheet("color: #fff; font-size: 14px;")
+        self.autoLoginCheck.setChecked(True)  # 默认选中
+        
+        # 自动登录文件路径
+        self.auto_login_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "auto_login.json")
+        
+        # 尝试自动登录
+        self.try_auto_login()
+        
+        # 状态消息
+        self.statusLabel = QtWidgets.QLabel("")
+        self.statusLabel.setStyleSheet("color: #ff5555; font-size: 14px;")
+        self.statusLabel.setAlignment(QtCore.Qt.AlignCenter)
+        
+        # 添加控件到布局
+        mainLayout.addWidget(titleLabel)
+        mainLayout.addSpacing(10)
+        mainLayout.addLayout(usernameLayout)
+        mainLayout.addLayout(passwordLayout)
+        mainLayout.addWidget(self.autoLoginCheck)
+        mainLayout.addWidget(self.statusLabel)
+        mainLayout.addSpacing(10)
+        mainLayout.addWidget(self.loginButton)
+        mainLayout.addWidget(self.registerButton)
+        
+        # 设置回车键触发登录
+        self.passwordEdit.returnPressed.connect(self.login)
+        
+    def try_auto_login(self):
+        """尝试自动登录"""
+        if os.path.exists(self.auto_login_file):
+            try:
+                with open(self.auto_login_file, 'r', encoding='utf-8') as f:
+                    auto_login_data = json.load(f)
+                
+                if auto_login_data.get("auto_login", False) and \
+                   "username" in auto_login_data and "password_hash" in auto_login_data:
+                    
+                    username = auto_login_data["username"]
+                    password_hash = auto_login_data["password_hash"]
+                    
+                    # 填充用户名和密码（如果需要）
+                    self.usernameEdit.setText(username)
+                    # 注意：这里不能直接填充密码，因为我们只保存了哈希值
+                    # 如果需要自动填充密码，需要保存明文密码，但这不安全
+                    # 或者在登录时直接使用哈希值验证
+                    
+                    # 模拟登录
+                    print(f"尝试自动登录用户: {username}")
+                    # 直接调用login方法，但需要确保login方法能处理这种情况
+                    # 或者创建一个专门的auto_login方法
+                    # 为了简化，我们直接调用login，但需要确保它能处理没有明文密码的情况
+                    # 这里我们假设login方法会再次哈希输入的密码进行比较
+                    
+                    # 更好的做法是直接验证哈希值，而不是模拟输入
+                    # 暂时不自动填充密码，只填充用户名，让用户输入密码
+                    # self.login() # 不直接调用，因为需要明文密码
+                    
+                    # 检查用户数据文件是否存在
+                    if not os.path.exists(self.user_data_path):
+                        print("用户数据文件不存在，无法自动登录")
+                        self.statusLabel.setText("用户数据文件不存在，无法自动登录")
+                        return
+                    
+                    # 读取用户数据
+                    try:
+                        with open(self.user_data_path, 'r', encoding='utf-8') as f:
+                            user_data = json.load(f)
+                    except Exception as e:
+                        print(f"读取用户数据失败: {str(e)}")
+                        self.statusLabel.setText(f"读取用户数据失败: {str(e)}")
+                        return
+                    
+                    if username in user_data and user_data[username]["password_hash"] == password_hash:
+                        print("自动登录成功")
+                        self.loginSuccess.emit() # 发送登录成功信号
+                        self.close() # 确保在信号发出后关闭窗口
+                    else:
+                        print("自动登录失败，密码或用户不匹配")
+                        self.statusLabel.setText("自动登录失败，密码或用户不匹配")
+                        self.clear_auto_login_info() # 清除错误的自动登录信息
+                        
+            except Exception as e:
+                print(f"读取自动登录信息失败: {str(e)}")
+                self.clear_auto_login_info() # 清除可能损坏的自动登录信息
+                
+    def save_auto_login_info(self, username, password):
+        """保存自动登录信息"""
+        try:
+            with open(self.auto_login_file, 'w', encoding='utf-8') as f:
+                json.dump({
+                    "auto_login": True,
+                    "username": username,
+                    "password_hash": self.hash_password(password) # 保存密码哈希值
+                }, f, ensure_ascii=False, indent=4)
+            print("自动登录信息已保存")
+        except Exception as e:
+            print(f"保存自动登录信息失败: {str(e)}")
+            
+    def clear_auto_login_info(self):
+        """清除自动登录信息"""
+        try:
+            if os.path.exists(self.auto_login_file):
+                os.remove(self.auto_login_file)
+                print("自动登录信息已清除")
+        except Exception as e:
+            print(f"清除自动登录信息失败: {str(e)}")
+        
+    def login(self):
+        username = self.usernameEdit.text().strip()
+        password = self.passwordEdit.text().strip()
+        
+        if not username or not password:
+            self.statusLabel.setText("用户名和密码不能为空")
+            return
+        
+        # 检查用户数据文件是否存在
+        if not os.path.exists(self.user_data_path):
+            self.statusLabel.setText("用户不存在，请先注册")
+            return
+        
+        # 读取用户数据
+        try:
+            with open(self.user_data_path, 'r', encoding='utf-8') as f:
+                user_data = json.load(f)
+        except Exception as e:
+            self.statusLabel.setText(f"读取用户数据失败: {str(e)}")
+            return
+        
+        # 验证用户名和密码
+        if username in user_data:
+            stored_password_hash = user_data[username]["password_hash"]
+            input_password_hash = self.hash_password(password)
+            
+            if stored_password_hash == input_password_hash:
+                self.statusLabel.setText("")
+                # 修正：同步用户名到全局变量
+                global current_username
+                current_username = username
+                # 自动登录逻辑
+                if hasattr(self, 'autoLoginCheck') and self.autoLoginCheck.isChecked():
+                    set_auto_login_info(username, input_password_hash)
+                else:
+                    clear_auto_login_info()
+                self.loginSuccess.emit()  # 发送登录成功信号
+                self.close() # 确保在信号发出后关闭窗口
+            else:
+                self.statusLabel.setText("密码错误")
+        else:
+            self.statusLabel.setText("用户不存在")
+    
+    def register(self):
+        username = self.usernameEdit.text().strip()
+        password = self.passwordEdit.text().strip()
+        
+        if not username or not password:
+            self.statusLabel.setText("用户名和密码不能为空")
+            return
+        
+        # 检查用户数据文件是否存在，不存在则创建
+        user_data = {}
+        if os.path.exists(self.user_data_path):
+            try:
+                with open(self.user_data_path, 'r', encoding='utf-8') as f:
+                    user_data = json.load(f)
+            except Exception as e:
+                self.statusLabel.setText(f"读取用户数据失败: {str(e)}")
+                return
+        
+        # 检查用户名是否已存在
+        if username in user_data:
+            self.statusLabel.setText("用户名已存在")
+            return
+        
+        # 添加新用户
+        password_hash = self.hash_password(password)
+        user_data[username] = {
+            "password_hash": password_hash,
+            "register_time": QtCore.QDateTime.currentDateTime().toString(QtCore.Qt.ISODate)
+        }
+        
+        # 保存用户数据
+        try:
+            with open(self.user_data_path, 'w', encoding='utf-8') as f:
+                json.dump(user_data, f, ensure_ascii=False, indent=4)
+            self.statusLabel.setStyleSheet("color: #55ff55; font-size: 14px;")
+            self.statusLabel.setText("注册成功，请登录")
+        except Exception as e:
+            self.statusLabel.setText(f"保存用户数据失败: {str(e)}")
+    
+    def hash_password(self, password):
+        """简单的密码哈希函数"""
+        return hashlib.sha256(password.encode()).hexdigest()
+        
+    def create_default_account(self):
+        """创建默认账号"""
+        # 默认账号信息
+        default_username = "admin"
+        default_password = "admin"
+        
+        # 确保用户数据目录存在
+        data_dir = os.path.dirname(self.user_data_path)
+        if not os.path.exists(data_dir):
+            try:
+                os.makedirs(data_dir)
+            except:
+                pass
+        
+        # 如果用户数据文件不存在，创建它
+        user_data = {}
+        if os.path.exists(self.user_data_path):
+            try:
+                with open(self.user_data_path, 'r', encoding='utf-8') as f:
+                    user_data = json.load(f)
+            except:
+                pass
+        
+        # 如果默认账号不存在，添加它
+        if default_username not in user_data:
+            password_hash = self.hash_password(default_password)
+            user_data[default_username] = {
+                "password_hash": password_hash,
+                "register_time": QtCore.QDateTime.currentDateTime().toString(QtCore.Qt.ISODate),
+                "is_default": True
+            }
+            
+            # 保存用户数据
+            try:
+                with open(self.user_data_path, 'w', encoding='utf-8') as f:
+                    json.dump(user_data, f, ensure_ascii=False, indent=4)
+            except Exception as e:
+                print(f"保存用户数据失败: {str(e)}")
+            
+        # 自动填充默认账号
+        self.usernameEdit.setText(default_username)
+        self.passwordEdit.setText(default_password)
+
+    def showEvent(self, event):
+        auto_info = get_auto_login_info()
+        if auto_info and auto_info.get("username"):
+            self.usernameEdit.setText(auto_info["username"])
+        else:
+            self.usernameEdit.setText(current_username)
+        self.passwordEdit.setText("")
+        super(LoginWindow, self).showEvent(event)
 
 # =========================
 # 主面板类（多Tab）
 # =========================
 class MaxStylePanelQt(QtWidgets.QWidget):
     def __init__(self, parent=None):
+        if not is_logged_in():
+            open_web_login()
         super(MaxStylePanelQt, self).__init__(parent)
-        self.setWindowTitle("多Tab演示面板（Qt版）")
-        self.resize(600, 760)  # 初始高度调大
-        self.setStyleSheet("background-color: #222;")
-        mainLayout = QtWidgets.QVBoxLayout(self)
-        mainLayout.setContentsMargins(30, 30, 30, 30)
-        mainLayout.setSpacing(18)
-        # 主Tab控件
-        self.tabWidget = QtWidgets.QTabWidget()
+        if not is_logged_in():
+            QtWidgets.QMessageBox.warning(None, "未登录", "请先在网页完成登录，登录后重启插件。")
+            self.setEnabled(False)
+        else:
+            self.setEnabled(True)
+        try:
+            self.setWindowTitle("PS风格面板")
+            self.resize(600, 760)  # 初始高度调大
+            self.setStyleSheet("background-color: #222;")
+            mainLayout = QtWidgets.QVBoxLayout(self)
+            mainLayout.setContentsMargins(30, 30, 30, 30)
+            mainLayout.setSpacing(18)
+            
+            # 顶部栏（用户名和退出按钮）
+            topBarLayout = QtWidgets.QHBoxLayout()
+            
+            # 左侧标题
+            titleLabel = QtWidgets.QLabel("PS风格面板")
+            titleLabel.setStyleSheet("""
+                color: white;
+                font-size: 20px;
+                font-weight: bold;
+            """)
+            
+            # 右侧用户信息和退出按钮
+            userInfoLayout = QtWidgets.QHBoxLayout()
+            
+            # 用户头像（使用圆形背景色）
+            self.userAvatar = QtWidgets.QLabel()
+            self.userAvatar.setFixedSize(32, 32)
+            self.userAvatar.setStyleSheet("""
+                background-color: #3da9fc;
+                border-radius: 16px;
+                color: white;
+                font-weight: bold;
+                font-size: 16px;
+            """)
+            self.userAvatar.setAlignment(QtCore.Qt.AlignCenter)
+            self.userAvatar.setText("A")
+            
+            # 用户名
+            self.usernameLabel = QtWidgets.QLabel("admin")
+            self.usernameLabel.setStyleSheet("""
+                color: white;
+                font-size: 14px;
+                margin-left: 5px;
+            """)
+            
+            # 退出按钮
+            logoutButton = QtWidgets.QPushButton("退出登录")
+            logoutButton.setStyleSheet("""
+                QPushButton {
+                    background-color: transparent;
+                    color: #3da9fc;
+                    border: none;
+                    font-size: 14px;
+                    padding: 5px 10px;
+                }
+                QPushButton:hover {
+                    color: #5dbdff;
+                    text-decoration: underline;
+                }
+            """)
+            logoutButton.setCursor(QtCore.Qt.PointingHandCursor)
+            logoutButton.clicked.connect(self.logout)
+            
+            # 添加到用户信息布局
+            userInfoLayout.addWidget(self.userAvatar)
+            userInfoLayout.addWidget(self.usernameLabel)
+            userInfoLayout.addWidget(logoutButton)
+            userInfoLayout.setSpacing(8)
+            
+            # 添加到顶部栏
+            topBarLayout.addWidget(titleLabel)
+            topBarLayout.addStretch(1)
+            topBarLayout.addLayout(userInfoLayout)
+            
+            # 添加顶部栏到主布局
+            mainLayout.addLayout(topBarLayout)
+            
+            # 添加分隔线
+            separator = QtWidgets.QFrame()
+            separator.setFrameShape(QtWidgets.QFrame.HLine)
+            separator.setFrameShadow(QtWidgets.QFrame.Sunken)
+            separator.setStyleSheet("background-color: #444;")
+            separator.setFixedHeight(1)
+            mainLayout.addWidget(separator)
+            
+            # 主Tab控件
+            self.tabWidget = QtWidgets.QTabWidget()
+        except Exception as e:
+            import traceback
+            error_msg = f"初始化主面板时出错: {str(e)}\n{traceback.format_exc()}"
+            print(error_msg)
+            # 显示一个简单的错误消息
+            errorLabel = QtWidgets.QLabel(f"初始化失败: {str(e)}")
+            errorLabel.setStyleSheet("color: red; font-size: 16px;")
+            errorLayout = QtWidgets.QVBoxLayout(self)
+            errorLayout.addWidget(errorLabel)
+            return
         self.tabWidget.setStyleSheet("""
 QTabBar::tab {
     min-width: 70px;
@@ -1352,34 +1900,48 @@ QTabWidget::pane {
     background: #222;
 }
 """)
-        tabNames = ["室内设计", "建筑规划", "景观设计", "图像处理"]
-        for name in tabNames:
-            tab = QtWidgets.QWidget()
-            tabLayout = QtWidgets.QVBoxLayout(tab)
-            tabLayout.setContentsMargins(0, 0, 0, 0)
-            tabLayout.setSpacing(0)
-            tabContent = TabContentWidget(name)
-            tabLayout.addWidget(tabContent)
-            tab.setLayout(tabLayout)
-            self.tabWidget.addTab(tab, name)
-        mainLayout.addWidget(self.tabWidget)
-        self.setLayout(mainLayout)
-        self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
-        # 监听主窗口激活事件（用于嵌入3ds Max主窗口时自动置顶）
-        main_win = self.get_max_main_window()
-        if main_win:
-            main_win.installEventFilter(self)
-        self.main_win = main_win
-
-    # 获取3ds Max主窗口（用于Dock嵌入）
-    def get_max_main_window(self):
         try:
-            import MaxPlus
-            import shiboken2
-            main_win_ptr = MaxPlus.GetQMaxMainWindow()
-            return shiboken2.wrapInstance(int(main_win_ptr), QtWidgets.QWidget)
-        except Exception:
-            return None
+            tabNames = ["室内设计", "建筑规划", "景观设计", "图像处理"]
+            for name in tabNames:
+                try:
+                    tab = QtWidgets.QWidget()
+                    tabLayout = QtWidgets.QVBoxLayout(tab)
+                    tabLayout.setContentsMargins(0, 0, 0, 0)
+                    tabLayout.setSpacing(0)
+                    tabContent = TabContentWidget(name)
+                    tabLayout.addWidget(tabContent)
+                    tab.setLayout(tabLayout)
+                    self.tabWidget.addTab(tab, name)
+                except Exception as e:
+                    import traceback
+                    error_msg = f"添加Tab '{name}'时出错: {str(e)}\n{traceback.format_exc()}"
+                    print(error_msg)
+                    # 添加一个错误Tab
+                    errorTab = QtWidgets.QWidget()
+                    errorLayout = QtWidgets.QVBoxLayout(errorTab)
+                    errorLabel = QtWidgets.QLabel(f"Tab '{name}'加载失败: {str(e)}")
+                    errorLabel.setStyleSheet("color: red; font-size: 16px;")
+                    errorLayout.addWidget(errorLabel)
+                    self.tabWidget.addTab(errorTab, f"{name}(错误)")
+            mainLayout.addWidget(self.tabWidget)
+            self.setLayout(mainLayout)
+        except Exception as e:
+            import traceback
+            error_msg = f"添加Tabs时出错: {str(e)}\n{traceback.format_exc()}"
+            print(error_msg)
+            # 显示一个简单的错误消息
+            errorLabel = QtWidgets.QLabel(f"添加Tabs失败: {str(e)}")
+            errorLabel.setStyleSheet("color: red; font-size: 16px;")
+            errorLayout = QtWidgets.QVBoxLayout(self)
+            errorLayout.addWidget(errorLabel)
+            self.setLayout(errorLayout)
+        self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
+        # 不再尝试获取3ds Max主窗口
+        self.main_win = None
+
+    # 获取3ds Max主窗口（用于Dock嵌入）- 简化版本，不再尝试导入MaxPlus
+    def get_max_main_window(self):
+        return None
 
     # 事件过滤器（主窗口激活时自动置顶）
     def eventFilter(self, obj, event):
@@ -1387,36 +1949,94 @@ QTabWidget::pane {
             self.show()
             self.raise_()
         return super(MaxStylePanelQt, self).eventFilter(obj, event)
+        
+    # 退出登录
+    def logout(self):
+        print("执行退出登录操作...")
+        # 清除自动登录设置
+        clear_auto_login_info()
+        print("已清除自动登录设置")
+        # 重置全局用户名变量
+        global current_username, main_panel_instance, login_window_instance
+        current_username = "admin"
+        print(f"已重置用户名为: {current_username}")
+        # 关闭主面板
+        print("关闭主面板...")
+        self.close()
+        # 创建并显示登录窗口
+        print("创建登录窗口...")
+        login_window_instance = LoginWindow()
+        try:
+            login_window_instance.loginSuccess.connect(create_main_panel)
+        except Exception as e:
+            print(f"连接loginSuccess信号失败: {str(e)}")
+        login_window_instance.show()
+        login_window_instance.raise_()
+        print("登录窗口已显示")
+
+def create_main_panel():
+    global current_username, main_panel_instance
+    username = current_username
+    if main_panel_instance and main_panel_instance.isVisible():
+        main_panel_instance.close()
+        main_panel_instance.deleteLater()
+        main_panel_instance = None
+    main_panel_instance = MaxStylePanelQt(None)
+    main_panel_instance.usernameLabel.setText(username)
+    if username and len(username) > 0:
+        main_panel_instance.userAvatar.setText(username[0].upper())
+    main_panel_instance.show()
+    main_panel_instance.raise_()
+    return main_panel_instance
+
+def get_auto_login_info():
+    auto_login_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "auto_login.json")
+    if os.path.exists(auto_login_file):
+        try:
+            with open(auto_login_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            return None
+    return None
+
+def set_auto_login_info(username, password_hash):
+    auto_login_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "auto_login.json")
+    with open(auto_login_file, 'w', encoding='utf-8') as f:
+        json.dump({
+            "auto_login": True,
+            "username": username,
+            "password_hash": password_hash
+        }, f, ensure_ascii=False, indent=4)
+
+def clear_auto_login_info():
+    auto_login_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "auto_login.json")
+    if os.path.exists(auto_login_file):
+        try:
+            os.remove(auto_login_file)
+        except Exception:
+            pass
 
 # =========================
 # 脚本入口
 # =========================
 if __name__ == '__main__':
+    start_token_server()
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     try:
         for w in QtWidgets.QApplication.allWidgets():
-            if w.windowTitle() == u"多Tab演示面板（Qt版）":
+            if w.windowTitle() == u"多Tab演示面板（Qt版）" or w.windowTitle() == u"登录":
                 w.close()
     except:
         pass
-    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-    # 获取3ds Max主窗口作为parent
-    try:
-        import MaxPlus
-        import shiboken2
-        def get_max_main_window():
-            main_win_ptr = MaxPlus.GetQMaxMainWindow()
-            return shiboken2.wrapInstance(int(main_win_ptr), QtWidgets.QWidget)
-        parent = get_max_main_window()
-    except Exception as e:
-        parent = None
-    win = MaxStylePanelQt(parent)
-    # Dock嵌入方式
-    try:
-        import MaxPlus
-        # 关闭同名Dock
-        for dock in MaxPlus.Docking.GetDockableWindows():
-            if dock[1] == "多Tab演示面板（Qt版）":
-                MaxPlus.Docking.UnregisterDockableWindow(dock[0])
-        MaxPlus.Docking.RegisterDockableWindow("多Tab演示面板（Qt版）", win, MaxPlus.Docking.DockLeft)
-    except Exception as e:
-        win.show() 
+    parent = None
+    # 启动时直接判断token
+    if is_logged_in():
+        main_panel_instance = MaxStylePanelQt(parent)
+        main_panel_instance.show()
+        main_panel_instance.raise_()
+    else:
+        open_web_login()
+        QtWidgets.QMessageBox.information(None, "登录引导", "请在弹出的网页中完成登录，登录后重启插件。\n\n网页端会自动写入本地token，无需手动操作。")
+    if not QtWidgets.QApplication.instance():
+        import sys
+        sys.exit(app.exec_())
