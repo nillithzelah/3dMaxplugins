@@ -1,0 +1,18 @@
+{
+    "testuser": {
+        "password_hash": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"
+    },
+    "admin": {
+        "password_hash": "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918",
+        "register_time": "2025-07-30T14:09:47",
+        "is_default": true
+    },
+    "13594226812": {
+        "password_hash": "f9d2ddce43de98c0c8a8d9910fde884f7e4b3c0ce93193c5f1494e58a11cb5e3",
+        "register_time": "2025-07-30T14:13:47"
+    },
+    "1": {
+        "password_hash": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+        "register_time": "2025-07-30T14:27:44"
+    }
+}
